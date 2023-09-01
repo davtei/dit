@@ -3,9 +3,14 @@
 import argparse
 
 parser = argparse.ArgumentParser(
-    description="dit - a git implementation in Python")
-subparsers = parser.add_subparsers(title="dit Commands", dest="dit_command")
-subparsers.required = True
+    description="dit - a git implementation in Python",
+    prog="dit",
+    usage="dit <dit_command> [<args>]",
+    epilog="See 'dit <command> --help' for more information on a specific command.")
+subparsers = parser.add_subparsers(
+    title="dit Commands",
+    dest="dit_command",
+    required=True)
 
 
 def main(argv=sys.argv[1:]):
