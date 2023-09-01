@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 
 parser = argparse.ArgumentParser(
     description="dit - a git implementation in Python",
@@ -29,6 +30,7 @@ def main(argv=sys.argv[1:]):
         case _: print(f"#{parser} is not a dit command. See dit --help.")
         # TODO: find a way to print the subcmd in the error message
 
-    def dit_add(args):
+
+def dit_add(args):
         '''Testing subfxn.'''
-        print("dit add")
+        print("TESTING dit add")
