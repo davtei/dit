@@ -24,7 +24,7 @@ class GitRepo(object):
 
         # reading the config file in the .git directory:
         self.config = configparser.ConfigParser()
-        configfile = git_file_dir(self, "config")
+        configfile = git_file_path(self, "config")
 
         if configfile and os.path.exists(configfile):
             self.config.read([configfile])
@@ -41,12 +41,17 @@ class GitRepo(object):
                     f"fatal: unsupported repositoryformatversion {version}")
 
 
-def git_file_path(repo, *path):
+def git_path_builder(repo, *path):
     """Return the path to a file or directory in the git directory."""
     return os.path.join(repo.dotgit, *path)
 
-def git_file_dir(repo, *path, create_dir=False):
+def git_file_path(repo, *path, create_dir=False):
     """Return the path to a file or directory in the git directory."""
+    if git_path_builder(repo, *path[:1], create_dir):
+        return git_path_builder(repo, *path)
+
+def git_file_dir(repo, *path, create_dir=False):
+    """Optionally creates the path to a file or directory in the git directory."""
     path = repo.git_file_path(*path)
 
     if os.path.exists(path):
@@ -60,3 +65,47 @@ def git_file_dir(repo, *path, create_dir=False):
     else:
         return None
 
+def create_repo(path):
+    """Create a new git repository with the path provided."""
+    repo = GitRepo(path, create=True)
+
+    # making sure the directory is empty:
+    if not os.path.exists(repo.workdir):
+        os.makedirs(repo.workdir)
+    elif not os.path.isdir(repo.workdir):
+        raise ValueError(f"{repo.workdir} is not a directory")
+    elif os.listdir(repo.workdir):
+        raise ValueError(f"{repo.workdir} is not empty")
+
+    # making sure the directory is empty:
+    if not os.path.exists(repo.dotgit):
+        os.makedirs(repo.dotgit)
+    elif not os.path.isdir(repo.dotgit):
+        raise ValueError(f"{repo.dotgit} is not a directory")
+    elif os.listdir(repo.dotgit):
+        raise ValueError(f"{repo.dotgit} is not empty")
+
+    # creating the subdirectories:
+    for name in ["objects", "refs", "refs/heads", "refs/tags"]:
+        os.makedirs(git_file_path(repo, name))
+
+    # creating the description file:
+    with open(git_file_path(repo, "description"), "w", encoding="utf-8") as f:
+        f.write("Unnamed repository; edit this file 'description' to name the repository.\n")
+
+    # creating the HEAD file:
+    with open(git_file_path(repo, "HEAD"), "w", encoding="utf-8") as f:
+        f.write("ref: refs/heads/master\n")
+
+    # creating the config file:
+    repo.config.add_section("core")
+    repo.config.set("core", "repositoryformatversion", "0")
+    repo.config.set("core", "filemode", "false")
+    repo.config.set("core", "bare", "false")
+    repo.config.set("core", "logallrefupdates", "true")
+    repo.config.set("core", "ignorecase", "true")
+    repo.config.set("core", "precomposeunicode", "true")
+    with open(git_file_path(repo, "config"), "w", encoding="utf-8") as f:
+        repo.config.write(f)
+
+    return repo
