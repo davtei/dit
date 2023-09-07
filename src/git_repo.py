@@ -4,7 +4,7 @@ import configparser
 import os
 
 
-class GitRepo(object):
+class GitRepo:
     """A class that defines a git repository."""
     # location of the version control files:
     workdir = None
@@ -17,7 +17,7 @@ class GitRepo(object):
         """Initialize a git repository."""
         self.workdir = path
         self.dotgit = os.path.join(path, ".git")
-
+        # making sure the path exists:
         if not (create or os.path.isdir(self.dotgit)):
             raise FileNotFoundError(
                 f"fatal: {self.dotgit} is not a git repository")
@@ -41,19 +41,19 @@ class GitRepo(object):
                     f"fatal: unsupported repositoryformatversion {version}")
 
 
-def git_path_builder(repo, *path):
+def git_path_finder(repo, *path):
     """Return the path to a file or directory in the git directory."""
     return os.path.join(repo.dotgit, *path)
 
 def git_file_path(repo, *path, create_dir=False):
     """Return the path to a file or directory in the git directory."""
-    if git_path_builder(repo, *path[:1], create_dir):
-        return git_path_builder(repo, *path)
+    if git_path_finder(repo, *path[:1], create_dir):
+        return git_path_finder(repo, *path)
 
 def git_file_dir(repo, *path, create_dir=False):
     """Optionally creates the path to a file or directory in the git directory."""
     path = repo.git_file_path(*path)
-
+    # making sure the path exists:
     if os.path.exists(path):
         if os.path.isdir(path):
             return path
@@ -66,7 +66,7 @@ def git_file_dir(repo, *path, create_dir=False):
         return None
 
 def create_repo(path):
-    """Create a new git repository with the path provided."""
+    """Create a new git repository at the path provided."""
     repo = GitRepo(path, create=True)
 
     # making sure the directory is empty:
@@ -109,3 +109,19 @@ def create_repo(path):
         repo.config.write(f)
 
     return repo
+
+def find_repo(path=".", required=True):
+    """Find the git repository in the path provided."""
+    path = os.path.realpath(path)
+
+    # making sure the path exists:
+    if os.path.isdir(os.path.join(path, ".git")):
+        return GitRepo(path)
+    elif path == "/":
+        if required:
+            raise FileNotFoundError("fatal: not a git repository (or any of the parent directories)")
+        else:
+            return None
+    else:
+        return find_repo(os.path.dirname(path), required)
+
