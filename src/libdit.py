@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
-# import collections
 import configparser
-# from datetime import datetime
-# import grp
-# import pwd
-# from fnmatch import fnmatch
-# import hashlib
-# from math import ceil
 import os
-# import re
 import sys
-# import zlib
 
 
 # Create a dictionary to store the command-line arguments
