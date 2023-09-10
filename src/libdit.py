@@ -312,3 +312,18 @@ def find_object(repo, name, format=None, follow=True):
                 if sha2.startswith(name):
                     return sha1 + sha2
 
+
+def write_object(obj, actually_write=True):
+    """Write an object to the git repository."""
+    # serializing the object:
+    data = obj.serialize()
+
+    # creating the path to the object:
+    path = git_file_path(obj.repo, "objects", obj.sha[:2], obj.sha[2:],
+                         create_dir=actually_write)
+
+    # writing the object to the git repository:
+    if actually_write:
+        with open(path, "wb") as f:
+            f.write(zlib.compress(data))
+    return path
