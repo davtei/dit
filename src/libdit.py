@@ -327,3 +327,20 @@ def write_object(obj, actually_write=True):
         with open(path, "wb") as f:
             f.write(zlib.compress(data))
     return path
+
+
+class BlobObject(GitObject):
+    """A class that defines a git blob object."""
+    object_format = "blob"
+
+    def __init__(self, repo, data=None):
+        """Initialize a git blob object."""
+        GitObject.__init__(self, repo, data)
+
+    def serialize(self):
+        """Serialize the git blob object."""
+        return self.blob_data
+
+    def deserialize(self, data):
+        """Deserialize the git blob object."""
+        self.blob_data = data
