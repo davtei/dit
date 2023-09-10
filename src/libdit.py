@@ -167,7 +167,7 @@ def main(argv=sys.argv[1:]):
     # Call the function that matches the command name
     # TODO: Add more commands
     match args.dit_command:
-        case "add": dit_add(args)
+        # case "add":         dit_add(args)
         # case "commit":    dit_commit(args)
         case "init":        dit_init(args)
         # case "log":       dit_log(args)
@@ -181,15 +181,8 @@ def main(argv=sys.argv[1:]):
 
 def dit_init(args):
     """Initialize a new, empty repository."""
-    # TODO: Add a check to see if the directory is already a git repo
     try:
         create_repo(args.path)
         print(f"Initialized empty dit repository in {args.path}/.git/")
-    except FileExistsError:
-        print("Reinitialized existing Git repository in .git/")
-
-
-def dit_add(args):
-    """Testing dit add."""
-    print("TESTING dit add")
-    print(args)
+    except ValueError as err:
+        print(err)
