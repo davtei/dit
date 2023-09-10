@@ -19,12 +19,12 @@ subparsers = parser.add_subparsers(
     required=True)
 
 # Create a subparser for the init command
-argsubparser = subparsers.add_parser(
+init_arg = subparsers.add_parser(
     "init",
     help="Initialize a new, empty repository.")
 
 # Add an argument to the init subparser
-argsubparser.add_argument(
+init_arg.add_argument(
     "path",
     metavar="directory",
     nargs="?",
@@ -169,7 +169,9 @@ def main(argv=sys.argv[1:]):
     # TODO: Add more commands
     match args.dit_command:
         # case "add":         dit_add(args)
+        case "cat-file":    dit_cat_file(args)
         # case "commit":    dit_commit(args)
+        case "hash-object": dit_hash_object(args)
         case "init":        dit_init(args)
         # case "log":       dit_log(args)
         # case "ls":        dit_ls(args)
@@ -242,10 +244,10 @@ def read_object(repo, sha):
         # selected to create an instance of the corresponding Git object
         # as GitBlob, GitCommit, GitTag, or GitTree:
         match object_format:
-            case "blob": return GitBlob(repo, raw_data[extract2:])
-            case "commit": return GitCommit(repo, raw_data[extract2:])
-            case "tag": return GitTag(repo, raw_data[extract2:])
-            case "tree": return GitTree(repo, raw_data[extract2:])
+            case "blob": return BlobObject(repo, raw_data[extract2:])
+            # case "commit": return CommitObject(repo, raw_data[extract2:])
+            # case "tag": return TagObject(repo, raw_data[extract2:])
+            # case "tree": return TreeObject(repo, raw_data[extract2:])
             case _: raise ValueError(f"Unknown object type {object_format}")
 
 
@@ -265,28 +267,28 @@ def find_object(repo, name, format=None, follow=True):
 
     # making sure the name is not a tag:
     if git_file_path(repo, "refs", "tags", name):
-        with open(git_file_path(repo, "refs", "tags", name)) as f:
+        with open(git_file_path(repo, "refs", "tags", name), encoding="utf-8") as f:
             return f.read().strip()
 
     # making sure the name is not a branch:
     if git_file_path(repo, "refs", "heads", name):
-        with open(git_file_path(repo, "refs", "heads", name)) as f:
+        with open(git_file_path(repo, "refs", "heads", name), encoding="utf-8") as f:
             return f.read().strip()
 
     # making sure the name is not a remote branch:
     if git_file_path(repo, "refs", "remotes", name):
-        with open(git_file_path(repo, "refs", "remotes", name)) as f:
+        with open(git_file_path(repo, "refs", "remotes", name), encoding="utf-8") as f:
             return f.read().strip()
 
     # making sure the name is not a note:
     if git_file_path(repo, "refs", "notes", name):
-        with open(git_file_path(repo, "refs", "notes", name)) as f:
+        with open(git_file_path(repo, "refs", "notes", name), encoding="utf-8") as f:
             return f.read().strip()
 
     # making sure the name is not a relative ref:
     if "/" in name:
         ref, name = name.split("/", 1)
-        with open(git_file_path(repo, "refs", ref, name)) as f:
+        with open(git_file_path(repo, "refs", ref, name), encoding="utf-8") as f:
             return f.read().strip()
 
     # making sure the name is not a short sha:
@@ -331,6 +333,7 @@ def write_object(obj, actually_write=True):
 
 class BlobObject(GitObject):
     """A class that defines a git blob object."""
+    # blob: binary large object
     object_format = "blob"
 
     def __init__(self, repo, data=None):
@@ -344,3 +347,96 @@ class BlobObject(GitObject):
     def deserialize(self, data):
         """Deserialize the git blob object."""
         self.blob_data = data
+
+
+# TODO: dit cat-file implementation is not complete:
+#       must be dit cat-file -t <object>
+# OR:
+#       must be dit cat-file -s <object>
+#       https://www.youtube.com/watch?v=ZR1mZyy_Gvk
+
+cat_file_arg = subparsers.add_parser(
+    "cat-file",
+    help="Provide content or type and size information for repository objects",
+    usage="dit cat-file <type> <object>",
+    epilog="See 'dit cat-file --help' for more information on a specific command.")
+
+cat_file_arg.add_argument(
+    "type",
+    choices=["blob", "commit", "tag", "tree"],
+    metavar="type",
+    help="Specify the type")
+
+cat_file_arg.add_argument(
+    "object",
+    metavar="object",
+    help="The object to display")
+
+
+def cat_file(repo, obj, format=None):
+    """Provide content or type and size information for repository objects."""
+    obj = read_object(repo, object)
+    sys.stdout.buffer.write(obj.serialize())
+
+
+def dit_cat_file(args):
+    """Provide content or type and size information for repository objects."""
+    repo = find_repo_root()
+    cat_file(repo, args.object, args.type)
+
+
+hash_object_arg = subparsers.add_parser(
+    "hash-object",
+    help="Compute object ID and optionally creates a blob from a file",
+    usage="dit hash-object [-w] [-t TYPE] <file>",
+    epilog="See 'dit hash-object --help' for more information on a specific command.")
+
+hash_object_arg.add_argument(
+    "-w",
+    action="store_true",
+    dest="write",
+    help="Actually write the object into the object database")
+
+hash_object_arg.add_argument(
+    "-t",
+    metavar="type",
+    dest="type",
+    default="blob",
+    choices=["blob", "commit", "tag", "tree"],
+    help="Specify the type of the object being written")
+
+hash_object_arg.add_argument(
+    "file",
+    metavar="file",
+    help="The file to compute the object ID from")
+
+
+def hash_object(repo, data, object_format, write=True):
+    """Compute object ID and optionally creates a blob from a file."""
+    # creating the header:
+    header = f"{object_format} {len(data)}\x00".encode()
+
+    # creating the object:
+    store = header + data
+
+    # creating the sha:
+    sha = hashlib.sha1(store).hexdigest()
+
+    # creating the path to the object:
+    path = git_file_path(repo, "objects", sha[:2], sha[2:],
+                         create_dir=write)
+
+    # writing the object to the git repository:
+    if write:
+        with open(path, "wb") as f:
+            f.write(zlib.compress(store))
+    return sha
+
+
+def dit_hash_object(args):
+    """Compute object ID and optionally creates a blob from a file."""
+    repo = find_repo_root()
+    with open(args.file, "rb") as f:
+        data = f.read()
+    sha = hash_object(repo, data, args.type, args.write)
+    print(sha)
