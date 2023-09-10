@@ -212,6 +212,7 @@ class GitObject:
         """Deserialize the git object."""
         raise NotImplementedError()
 
+
 def read_object(repo, sha):
     """Read an object from the git repository."""
     # creating the path to the object:
@@ -246,4 +247,68 @@ def read_object(repo, sha):
             case "tag": return GitTag(repo, raw_data[extract2:])
             case "tree": return GitTree(repo, raw_data[extract2:])
             case _: raise ValueError(f"Unknown object type {object_format}")
+
+
+def find_object(repo, name, format=None, follow=True):
+    """Find the object with the given name."""
+    # making sure the name is not empty:
+    if not name.strip():
+        raise ValueError("invalid empty name")
+
+    # making sure the name is not a sha:
+    if len(name) == 40:
+        return name
+
+    # making sure the name is not a sha prefix:
+    if len(name) >= 4 and all(c in "0123456789abcdef" for c in name):
+        return name
+
+    # making sure the name is not a tag:
+    if git_file_path(repo, "refs", "tags", name):
+        with open(git_file_path(repo, "refs", "tags", name)) as f:
+            return f.read().strip()
+
+    # making sure the name is not a branch:
+    if git_file_path(repo, "refs", "heads", name):
+        with open(git_file_path(repo, "refs", "heads", name)) as f:
+            return f.read().strip()
+
+    # making sure the name is not a remote branch:
+    if git_file_path(repo, "refs", "remotes", name):
+        with open(git_file_path(repo, "refs", "remotes", name)) as f:
+            return f.read().strip()
+
+    # making sure the name is not a note:
+    if git_file_path(repo, "refs", "notes", name):
+        with open(git_file_path(repo, "refs", "notes", name)) as f:
+            return f.read().strip()
+
+    # making sure the name is not a relative ref:
+    if "/" in name:
+        ref, name = name.split("/", 1)
+        with open(git_file_path(repo, "refs", ref, name)) as f:
+            return f.read().strip()
+
+    # making sure the name is not a short sha:
+    if len(name) >= 4:
+        for sha in os.listdir(git_file_path(repo, "objects", name[:2])):
+            if sha.startswith(name):
+                return sha
+
+    # making sure the name is not a loose object:
+    if len(name) == 38:
+        return name
+
+    # making sure the name is not a loose object:
+    if len(name) == 2:
+        for sha in os.listdir(git_file_path(repo, "objects", name)):
+            if sha.startswith(name):
+                return sha
+
+    # making sure the name is not a loose object:
+    if len(name) == 0:
+        for sha1 in os.listdir(git_file_path(repo, "objects")):
+            for sha2 in os.listdir(git_file_path(repo, "objects", sha1)):
+                if sha2.startswith(name):
+                    return sha1 + sha2
 
