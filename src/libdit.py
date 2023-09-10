@@ -93,8 +93,7 @@ def git_file_dir(repo, *path, create_dir=False):
     if create_dir:
         os.makedirs(path)
         return path
-    else:
-        return None
+    return None
 
 
 def create_repo(path):
@@ -183,7 +182,11 @@ def main(argv=sys.argv[1:]):
 def dit_init(args):
     """Initialize a new, empty repository."""
     # TODO: Add a check to see if the directory is already a git repo
-    create_repo(args.path)
+    try:
+        create_repo(args.path)
+        print(f"Initialized empty dit repository in {args.path}/.git/")
+    except FileExistsError:
+        print("Reinitialized existing Git repository in .git/")
 
 
 def dit_add(args):
