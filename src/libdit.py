@@ -4,6 +4,7 @@ import argparse
 import configparser
 import os
 import sys
+import zlib
 
 
 # Create a dictionary to store the command-line arguments
@@ -213,25 +214,36 @@ class GitObject:
 
 def read_object(repo, sha):
     """Read an object from the git repository."""
+    # creating the path to the object:
     path = git_file_path(repo, "objects", sha[:2], sha[2:])
+
+    # making sure the object exists:
+    if not os.path.exists(path):
+        raise ValueError(f"{sha} not found")
+
+    # reading the object's content as a zlib compressed binary string:
     with open(path, "rb") as f:
-        raw = zlib.decompress(f.read())
-        print(raw)
-        # print(raw.decode())
-        # print(raw.decode().split("\x00", 1))
-        # print(raw.decode().split("\x00", 1)[0])
-        # print(raw.decode().split("\x00", 1)[0].split(" ", 1))
-        # print(raw.decode().split("\x00", 1)[0].split(" ", 1)[0])
-        # print(raw.decode().split("\x00", 1)[0].split(" ", 1)[1])
-        # print(raw.decode().split("\x00", 1)[1])
-        # print(raw.decode().split("\x00", 1)[1].encode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw)
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].encode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1])
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].encode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].decode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].decode().encode())
-        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].decode().encode().split("\x00", 1)[1])
-        # print(raw.decode().split("\x00
+        raw_data = zlib.decompress(f.read())
+
+        # extracting the format of the object from the binary string:
+        extract1 = raw_data.find(b"\x00", 1)[1:].decode()
+        object_format = raw_data[:extract1]
+
+        # extracting the size of the object from the binary string:
+        extract2 = raw_data.find(b"\x00", extract1 + 1)[1:].decode()
+        object_size = int(raw_data[extract1:extract2].decode("ascii"))
+        # checking that the size of the object is correct:
+        if object_size != str(len(raw_data[extract2:])):
+            raise ValueError(
+                f"expected {object_size} bytes, got {len(raw_data[extract2:])}")
+
+        # Depending on the format of the object, the appropriate class is
+        # selected to create an instance of the corresponding Git object
+        # as GitBlob, GitCommit, GitTag, or GitTree:
+        match object_format:
+            case "blob": return GitBlob(repo, raw_data[extract2:])
+            case "commit": return GitCommit(repo, raw_data[extract2:])
+            case "tag": return GitTag(repo, raw_data[extract2:])
+            case "tree": return GitTree(repo, raw_data[extract2:])
+            case _: raise ValueError(f"Unknown object type {object_format}")
+
