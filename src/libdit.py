@@ -186,3 +186,52 @@ def dit_init(args):
         print(f"Initialized empty dit repository in {args.path}/.git/")
     except ValueError as err:
         print(err)
+
+
+class GitObject:
+    """A class that defines a git object."""
+    repo = None
+
+    def __init__(self, repo, data=None):
+        """Initialize a git object."""
+        self.repo = repo
+
+        if data is not None:
+            self.deserialize(data)
+
+    def init(self):
+        """Initialize a git object."""
+        # pass
+
+    def serialize(self):
+        """Serialize the git object."""
+        raise NotImplementedError()
+
+    def deserialize(self, data):
+        """Deserialize the git object."""
+        raise NotImplementedError()
+
+def read_object(repo, sha):
+    """Read an object from the git repository."""
+    path = git_file_path(repo, "objects", sha[:2], sha[2:])
+    with open(path, "rb") as f:
+        raw = zlib.decompress(f.read())
+        print(raw)
+        # print(raw.decode())
+        # print(raw.decode().split("\x00", 1))
+        # print(raw.decode().split("\x00", 1)[0])
+        # print(raw.decode().split("\x00", 1)[0].split(" ", 1))
+        # print(raw.decode().split("\x00", 1)[0].split(" ", 1)[0])
+        # print(raw.decode().split("\x00", 1)[0].split(" ", 1)[1])
+        # print(raw.decode().split("\x00", 1)[1])
+        # print(raw.decode().split("\x00", 1)[1].encode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw)
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].encode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1])
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].encode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].decode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].decode().encode())
+        # print(raw.decode().split("\x00", 1)[1].encode() == raw.decode().encode().split("\x00", 1)[1].decode().encode().split("\x00", 1)[1])
+        # print(raw.decode().split("\x00
