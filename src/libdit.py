@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
+import collections
 import configparser
+import hashlib
 import os
 import sys
 import zlib
@@ -440,3 +442,38 @@ def dit_hash_object(args):
         data = f.read()
     sha = hash_object(repo, data, args.type, args.write)
     print(sha)
+
+
+def commit_msg_parse(raw, begin=0, dictn=None):
+    """Parse a commit message as a key-value list message with support for multiline values."""
+    # Making sure the commit message is not empty:
+    if not dictn:
+        dictn = collections.OrderedDict()
+
+    next_space = raw.find(b' ', begin)
+    next_newline = raw.find(b'\n', begin)
+
+    if next_space == -1:
+        next_space = len(raw)
+    if next_newline == -1:
+        next_newline = len(raw)
+
+    if next_space < next_newline:
+        k = raw[begin:next_space]
+        value_start = next_space + 1
+        value_end = next_newline
+
+        # Check if the value continues on the next line (starts with space or tab)
+        while value_end < len(raw) and (raw[value_end] == b' ' or raw[value_end] == b'\t'):
+            next_newline = raw.find(b'\n', value_end + 1)
+            if next_newline == -1:
+                next_newline = len(raw)
+            value_end = next_newline
+
+        v = raw[value_start:value_end]
+        dictn[k] = v
+
+        # Recursively call the function with the next newline as the beginning
+        return commit_msg_parse(raw, next_newline + 1, dictn)
+    else:
+        return dictn
