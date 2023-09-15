@@ -248,7 +248,7 @@ def read_object(repo, sha):
         # as GitBlob, GitCommit, GitTag, or GitTree:
         match object_format:
             case "blob": return BlobObject(repo, raw_data[extract2:])
-            # case "commit": return CommitObject(repo, raw_data[extract2:])
+            case "commit": return CommitObject(repo, raw_data[extract2:])
             # case "tag": return TagObject(repo, raw_data[extract2:])
             case "tree": return TreeObject(repo, raw_data[extract2:])
             case _: raise ValueError(f"Unknown object type {object_format}")
@@ -511,7 +511,7 @@ def commit_msg_serialize(dictn):
     return msg
 
 
-def CommitObject(GitObject):
+class CommitObject(GitObject):
     """A class that defines a git commit object."""
     object_format = "commit"
 
@@ -684,3 +684,75 @@ def ls_tree(repo, sha, recursive=False):
         # recursively calling the function if the tree leaf is a directory:
         if leaf.mode.startswith(b"10") and recursive:
             ls_tree(repo, leaf.sha, recursive)
+
+
+# git checkout: allows switching branches or restoring working tree files
+# dit checkout will be implemented as dit checkout <path>
+# It will instantiate the tree object and write the files to the path provided
+checkout_arg = subparsers.add_parser(
+    "checkout",
+    help="Restore working tree files in the path provided",
+    usage="dit checkout <path>",
+    epilog="See 'dit checkout --help' for more information on a specific command.")
+
+checkout_arg.add_argument(
+    "commit",
+    metavar="commit",
+    help="The commit or tree to checkout")
+
+checkout_arg.add_argument(
+    "path",
+    metavar="path",
+    help="The path to checkout to")
+
+
+def checkout_tree(repo, commit, path):
+    """Restore working tree files in the path provided."""
+    # reading the commit object:
+    commit = read_object(repo, commit)
+
+    # making sure the object is a commit:
+    if commit.object_format != "commit":
+        raise ValueError(f"{commit} is not a commit")
+
+    # reading the tree object:
+    tree = read_object(repo, commit.tree)
+
+    # making sure the object is a tree:
+    if tree.object_format != "tree":
+        raise ValueError(f"{tree} is not a tree")
+
+    # iterating through the tree leaves:
+    for leaf in tree.leaves:
+        # reading the blob object:
+        blob = read_object(repo, leaf.sha)
+
+        # making sure the object is a blob:
+        if blob.object_format != "blob":
+            raise ValueError(f"{blob} is not a blob")
+
+        # creating the path to the file:
+        path = os.path.join(path, leaf.path)
+
+        # writing the file to the path provided:
+        with open(path, "wb") as f:
+            f.write(blob.blob_data)
+
+
+def dit_checkout(args):
+    """Restore working tree files in the path provided."""
+    repo = find_repo_root()
+
+    # if path exists and is not a directory or not empty, raise an error:
+    if os.path.exists(args.path):
+        if not os.path.isdir(args.path):
+            raise NotADirectoryError(f"fatal: {args.path} is not a directory")
+        if os.listdir(args.path):
+            raise ValueError(f"fatal: {args.path} is not empty")
+    # else, create the directory path provided:
+    else:
+        os.makedirs(args.path)
+
+    checkout_tree(repo, args.commit, args.path)
+
+
