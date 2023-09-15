@@ -450,16 +450,19 @@ def commit_msg_parse(raw, begin=0, dictn=None):
     if not dictn:
         dictn = collections.OrderedDict()
 
+    # Find the next space and newline characters:
     next_space = raw.find(b' ', begin)
     next_newline = raw.find(b'\n', begin)
 
+    # If the next space or newline characters are not found, set them to the length of the raw string:
     if next_space == -1:
         next_space = len(raw)
     if next_newline == -1:
         next_newline = len(raw)
 
+    # If the next space character is found before the next newline character, then the key-value pair is on the same line:
     if next_space < next_newline:
-        k = raw[begin:next_space]
+        key = raw[begin:next_space]
         value_start = next_space + 1
         value_end = next_newline
 
@@ -470,10 +473,75 @@ def commit_msg_parse(raw, begin=0, dictn=None):
                 next_newline = len(raw)
             value_end = next_newline
 
-        v = raw[value_start:value_end]
-        dictn[k] = v
+    # If the next newline character is found before the next space character, then the key-value pair is on different lines:
+        value = raw[value_start:value_end]
+        dictn[key] = value
 
         # Recursively call the function with the next newline as the beginning
         return commit_msg_parse(raw, next_newline + 1, dictn)
     else:
-        return dictn
+        # If the next space character is not found before the next newline character, then the key-value pair is on different lines:
+        return dictn    # Return the key-value list
+
+
+# TODO: Fix this function to include the commit message:
+def commit_msg_serialize(dictn):
+    """Serialize a commit message as a key-value list message with support for multiline values."""
+    msg = b''
+    for key, value in dictn.items():
+        # Skip the key-value pair if the key is None:
+        # (the key is None when the value is the commit message)
+        if key is None:
+            continue
+        value = dictn[key]
+        # Make the value a list if it is not already a list:
+        if not isinstance(value, list):
+            value = [value]
+        # Join the list of values with a newline character:
+        for val in value:
+            msg += key + b' ' + (val.replace(b'\n', b'\n ')) + b'\n'
+
+    # Append the message with a newline character:
+    msg += b'\n' + dictn[None] + b'\n'
+    # Check that the length of the message is correct:
+    if len(msg) != len(dictn[None]) + 2:
+        raise ValueError(f"expected {len(dictn[None]) + 2} bytes, got {len(msg)}")
+    return msg
+
+
+def GitCommit(GitObject):
+    """A class that defines a git commit object."""
+    object_format = "commit"
+
+    def __init__(self, repo, data=None):
+        """Initialize a git commit object."""
+        GitObject.__init__(self, repo, data)
+
+    def serialize(self):
+        """Serialize the git commit object."""
+        # creating the dictionary to store the commit message:
+        dictn = collections.OrderedDict()
+
+        # creating the commit message:
+        dictn[b"tree"] = self.tree
+        dictn[b"parent"] = self.parent
+        dictn[b"author"] = self.author
+        dictn[b"committer"] = self.committer
+        dictn[None] = self.message
+
+        # serializing the commit message:
+        return commit_msg_serialize(dictn)
+
+    def deserialize(self, data):
+        """Deserialize the git commit object."""
+        # deserializing the commit message:
+        dictn = commit_msg_parse(data)
+
+        # extracting the commit message:
+        self.tree = dictn[b"tree"]
+        self.parent = dictn[b"parent"]
+        self.author = dictn[b"author"]
+        self.committer = dictn[b"committer"]
+        self.message = dictn[None]
+
+
