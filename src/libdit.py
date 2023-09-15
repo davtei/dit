@@ -176,11 +176,12 @@ def main(argv=sys.argv[1:]):
         case "hash-object": dit_hash_object(args)
         case "init":        dit_init(args)
         # case "log":       dit_log(args)
-        # case "ls":        dit_ls(args)
+        case "ls-tree":     dit_ls_tree(args)
         # case "status":    dit_status(args)
         # case "tag":       dit_tag(args)
         # case _:           print(f"#{parser} is not a dit command. See dit --help.")
         case _: print(f"#{subparsers} is not a dit command. See dit --help.")
+
         # TODO: find a way to print the subcmd in the error message
 
 
@@ -249,7 +250,7 @@ def read_object(repo, sha):
             case "blob": return BlobObject(repo, raw_data[extract2:])
             # case "commit": return CommitObject(repo, raw_data[extract2:])
             # case "tag": return TagObject(repo, raw_data[extract2:])
-            # case "tree": return TreeObject(repo, raw_data[extract2:])
+            case "tree": return TreeObject(repo, raw_data[extract2:])
             case _: raise ValueError(f"Unknown object type {object_format}")
 
 
@@ -505,11 +506,12 @@ def commit_msg_serialize(dictn):
     msg += b'\n' + dictn[None] + b'\n'
     # Check that the length of the message is correct:
     if len(msg) != len(dictn[None]) + 2:
-        raise ValueError(f"expected {len(dictn[None]) + 2} bytes, got {len(msg)}")
+        raise ValueError(
+            f"expected {len(dictn[None]) + 2} bytes, got {len(msg)}")
     return msg
 
 
-def GitCommit(GitObject):
+def CommitObject(GitObject):
     """A class that defines a git commit object."""
     object_format = "commit"
 
@@ -545,3 +547,140 @@ def GitCommit(GitObject):
         self.message = dictn[None]
 
 
+# TODO
+# TODO: Implement dit log
+# TODO
+
+
+class GitTreeLeaf:
+    """A class that defines a git tree leaf in the work directory."""
+
+    def __init__(self, mode, path, sha):
+        """Initialize a git tree leaf."""
+        # defines the mode of the tree leaf:
+        # (files: beginning with 100, directories: beginning with 040)
+        self.mode = mode
+        self.path = path
+        self.sha = sha
+
+
+def tree_parse_one(raw, start=0):
+    """Parse a git tree object."""
+    # Find the next space and newline characters:
+    end = raw.find(b"\x00", start)
+    # If the next space or newline characters are not found, set them to the length of the raw string:
+    if end == -1:
+        end = len(raw)
+
+    # Extract the mode, path, and sha from the binary string:
+    mode, path = raw[start:end].decode().split(" ", 1)
+    sha = raw[end + 1:end + 21]
+
+    # Return the tree leaf:
+    return GitTreeLeaf(mode, path, sha), end + 21
+
+
+# def tree_parse(repo, data):
+def tree_parse(data):
+    """Parse a git tree object."""
+    # Create a list to store the tree leaves:
+    leaves = []
+
+    # Iterate through the tree leaves:
+    for line in data.decode().split("\n"):
+        if not line:
+            continue
+        # Extract the mode, path, and sha from the binary string:
+        mode, path, sha = line.split(" ", 2)
+        leaves.append(GitTreeLeaf(mode, path, sha))
+
+    # Return the tree leaves:
+    return leaves
+
+
+def sort_tree_leaf(leaf):
+    """Sort a git tree leaf."""
+    # Sort the tree leaves by path (directories first, then files):
+    if leaf.mode.startswith(b"10"):
+        # leaves that start with 100 are files:
+        return leaf.path
+    else:
+        # leaves that start with other modes are directories and end with a slash:
+        return leaf.path + "/"
+
+
+def tree_serialize(obj):
+    """Serialize a git tree object."""
+    # Create a list to store the tree leaves:
+    leaves = []
+
+    # Iterate through the tree leaves:
+    for entry in obj.leaves:
+        leaves.append(f"{entry.mode} {entry.path}\x00{entry.sha}")
+
+    # Join the tree leaves with a newline character:
+    return b"\n".join(leaves)
+
+
+class TreeObject(GitObject):
+    """A class that defines a git tree object."""
+    object_format = "tree"
+
+    def __init__(self, repo, data=None):
+        """Initialize a git tree object."""
+        GitObject.__init__(self, repo, data)
+
+    def serialize(self):
+        """Serialize the git tree object."""
+        # serializing the tree leaves:
+        return tree_serialize(self)
+
+    def deserialize(self, data):
+        """Deserialize the git tree object."""
+        # deserializing the tree leaves:
+        self.leaves = tree_parse(data)
+
+
+# ls-tree: allows listing the contents of a tree object
+ls_tree_arg = subparsers.add_parser(
+    "ls-tree",
+    help="List the contents of a tree object",
+    usage="dit ls-tree <tree-sha>",
+    epilog="See 'dit ls-tree --help' for more information on a specific command.")
+
+ls_tree_arg.add_argument(
+    "-r",
+    action="store_true",
+    dest="recursive",
+    help="Recurse into sub-trees")
+
+ls_tree_arg.add_argument(
+    "tree",
+    metavar="tree",
+    help="The tree to list")
+
+
+def dit_ls_tree(args):
+    """List the contents of a tree object."""
+    repo = find_repo_root()
+    ls_tree(repo, args.tree, args.recursive)
+
+
+def ls_tree(repo, sha, recursive=False):
+    """List the contents of a tree object."""
+    # reading the tree object:
+    obj = read_object(repo, sha)
+
+    # making sure the object is a tree:
+    if obj.object_format != "tree":
+        raise ValueError(f"{sha} is not a tree")
+
+    # iterating through the tree leaves:
+    for leaf in obj.leaves:
+        # sorted(obj.leaves, key=sort_tree_leaf):
+        # printing the tree leaf:
+        print(leaf.mode, leaf.sha, leaf.path, sep="\t")
+
+        # recursively calling the function if the tree leaf is a directory:
+        if leaf.mode.startswith(b"10") and recursive:
+            ls_tree(repo, leaf.sha, recursive)
