@@ -174,14 +174,18 @@ def main(argv=sys.argv[1:]):
         case "cat-file":    dit_cat_file(args)
         case "checkout":  dit_checkout(args)
         # case "commit":    dit_commit(args)
-        case "hash-object": dit_hash_object(args)
-        case "init":        dit_init(args)
-        # case "log":       dit_log(args)
-        case "ls-tree":     dit_ls_tree(args)
-        # case "status":    dit_status(args)
-        # case "tag":       dit_tag(args)
+        case "hash-object":     dit_hash_object(args)
+        case "init":            dit_init(args)
+        # case "log":           dit_log(args)
+        case "ls-tree":         dit_ls_tree(args)
+        case "show-ref":        dit_show_ref(args)
+        # case "status":        dit_status(args)
+        case "symbolic-ref":    dit_symbolic_ref(args)
+        case "tag":             dit_tag(args)
+        case "update-ref":      dit_update_ref(args)
+        case _: print(f"#{args.dit_command} is not a dit command. See dit --help.")
         # case _:           print(f"#{parser} is not a dit command. See dit --help.")
-        case _: print(f"#{subparsers} is not a dit command. See dit --help.")
+        # case _: print(f"#{subparsers} is not a dit command. See dit --help.")
 
         # TODO: find a way to print the subcmd in the error message
 
@@ -921,3 +925,42 @@ def dit_symbolic_ref(args):
     """Update the object name stored in a ref safely."""
     repo = find_repo_root()
     symbolic_ref(repo, args.ref, args.sha)
+
+
+# dit tag: allows creating, listing, deleting or verifying a tag object
+# dit tag will be implemented as dit tag <tag> <sha>
+# It will instantiate the tree object and write the files to the path provided
+tag_arg = subparsers.add_parser(
+    "tag",
+    help="Create, list, delete or verify a tag object signed with GPG",
+    usage="dit tag <tag> <sha>",
+    epilog="See 'dit tag --help' for more information on a specific command.")
+
+tag_arg.add_argument(
+    "tag",
+    metavar="tag",
+    help="The tag to create, list, delete or verify")
+
+tag_arg.add_argument(
+    "sha",
+    metavar="sha",
+    help="The sha to create, list, delete or verify the tag to")
+
+
+def tag(repo, tag_a, sha):
+    """Create, list, delete or verify a tag object signed with GPG."""
+    # creating the path to the reference:
+    path = git_file_path(repo, "refs", "tags", tag_a, create_dir=True)
+
+    # writing the reference to the git repository:
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(sha + "\n")
+
+    # returning the reference:
+    return tag_a
+
+
+def dit_tag(args):
+    """Create, list, delete or verify a tag object signed with GPG."""
+    repo = find_repo_root()
+    tag(repo, args.tag, args.sha)
