@@ -882,3 +882,42 @@ def dit_update_ref(args):
     """Update the object name stored in a ref safely."""
     repo = find_repo_root()
     update_ref(repo, args.ref, args.sha)
+
+
+# dit symbolic-ref: allows updating the references in the repository
+# dit symbolic-ref will be implemented as dit symbolic-ref <ref> <ref>
+# It will instantiate the tree object and write the files to the path provided
+symbolic_ref_arg = subparsers.add_parser(
+    "symbolic-ref",
+    help="Update the object name stored in a ref safely",
+    usage="dit symbolic-ref <ref> <ref>",
+    epilog="See 'dit symbolic-ref --help' for more information on a specific command.")
+
+symbolic_ref_arg.add_argument(
+    "ref",
+    metavar="ref",
+    help="The ref to update")
+
+symbolic_ref_arg.add_argument(
+    "sha",
+    metavar="sha",
+    help="The sha to update the ref to")
+
+
+def symbolic_ref(repo, ref, sha):
+    """Update the object name stored in a ref safely."""
+    # creating the path to the reference:
+    path = git_file_path(repo, ref, create_dir=True)
+
+    # writing the reference to the git repository:
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(f"ref: {sha}\n")
+
+    # returning the reference:
+    return ref
+
+
+def dit_symbolic_ref(args):
+    """Update the object name stored in a ref safely."""
+    repo = find_repo_root()
+    symbolic_ref(repo, args.ref, args.sha)
