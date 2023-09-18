@@ -172,6 +172,7 @@ def main(argv=sys.argv[1:]):
     match args.dit_command:
         # case "add":         dit_add(args)
         case "cat-file":    dit_cat_file(args)
+        case "checkout":  dit_checkout(args)
         # case "commit":    dit_commit(args)
         case "hash-object": dit_hash_object(args)
         case "init":        dit_init(args)
