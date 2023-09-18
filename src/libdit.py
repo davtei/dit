@@ -14,7 +14,9 @@ parser = argparse.ArgumentParser(
     description="dit - a git implementation in Python",
     prog="dit",
     usage="dit <dit_command> [<args>]",
-    epilog="See 'dit <command> --help' for more information on a specific command.")
+    epilog="See 'dit <command> --help' for more information on a specific "
+    "command.")
+
 subparsers = parser.add_subparsers(
     title="dit Commands",
     dest="dit_command",
@@ -163,9 +165,10 @@ def find_repo_root(path=".", required=True):
         return find_repo_root(os.path.dirname(path), required)
 
 
-def main(argv=sys.argv[1:]):
+def main(arg=None):
     """Main function."""
-    args = parser.parse_args(argv)
+    if arg is None:
+        args = parser.parse_args()
 
     # Call the function that matches the command name
     # TODO: Add more commands
