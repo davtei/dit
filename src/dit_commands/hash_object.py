@@ -18,8 +18,6 @@ Raises:
 # NOTE: The current implementation of hash-object:
 # dit hash-object <file>
 
-# TODO: Implement the -w and -t flags.
-
 
 import hashlib
 import zlib
