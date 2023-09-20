@@ -10,8 +10,15 @@ Returns:
 Raises:
     ValueError: if the repository already exists.
     Usage:
+        dit hash-object <file>
         dit hash-object [-w] [-t TYPE] <file>
 """
+# NOTE: The current implementation of hash-object does not support
+# the -w and -t flags.
+# NOTE: The current implementation of hash-object:
+# dit hash-object <file>
+
+# TODO: Implement the -w and -t flags.
 
 
 import hashlib
