@@ -37,7 +37,7 @@ def dit_init(args):
     """
     try:
         create_repo(args.path)
-        print(f"Initialized empty dit repository in {args.path}/.git/")
+        print(f"Initialized a dit repository in {args.path}/.git/")
     except ValueError as err:
         print(err)
         sys.exit(1)

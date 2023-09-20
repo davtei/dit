@@ -31,8 +31,10 @@ def create_repo(path):
         os.makedirs(repo.workdir)
     elif not os.path.isdir(repo.workdir):
         raise ValueError(f"{repo.workdir} is not a directory")
-    elif os.listdir(repo.workdir):
-        raise ValueError(f"{repo.workdir} is not empty")
+    # to allow for the creation of a new repo in a non-empty directory
+    # (e.g., a directory with an existing codebase):
+    elif not os.listdir(repo.workdir):
+        return repo
 
     # making sure the .git directory is empty:
     if not os.path.exists(repo.dotgit):
