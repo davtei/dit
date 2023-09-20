@@ -31,22 +31,9 @@ from src.repos.repo_paths import git_file_path
 hash_object_arg = subparsers.add_parser(
     "hash-object",
     help="Compute object ID and optionally creates a blob from a file",
-    usage="dit hash-object [-w] [-t TYPE] <file>",
+    # usage="dit hash-object [-w] [-t TYPE] <file>",
+    usage="dit hash-object <file>",
     epilog="See 'dit hash-object --help' for more information on a specific command.")
-
-hash_object_arg.add_argument(
-    "-w",
-    action="store_true",
-    dest="write",
-    help="Actually write the object into the object database")
-
-hash_object_arg.add_argument(
-    "-t",
-    metavar="type",
-    dest="type",
-    default="blob",
-    choices=["blob", "commit", "tag", "tree"],
-    help="Specify the type of the object being written")
 
 hash_object_arg.add_argument(
     "file",
