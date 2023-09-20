@@ -3,7 +3,7 @@
 
 """A module that defines the dit commands."""
 
-from src.dit_commands.cat_file import dit_cat_file
+# from src.dit_commands.cat_file import dit_cat_file
 from src.dit_commands.checkout import dit_checkout
 from src.dit_commands.hash_object import dit_hash_object
 from src.dit_commands.init import dit_init
@@ -26,9 +26,9 @@ def main(arg=None):
     # Call the function that matches the command name
     command = args.dit_command
 
-    if command == "cat-file":
-        dit_cat_file(args)
-    elif command == "checkout":
+    # if command == "cat-file":
+    #     dit_cat_file(args)
+    if command == "checkout":
         dit_checkout(args)
     elif command == "hash-object":
         dit_hash_object(args)
