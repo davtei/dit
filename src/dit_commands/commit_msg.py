@@ -54,7 +54,6 @@ def commit_msg_parse(raw, begin=0, dictn=None):
         return dictn    # Return the key-value list
 
 
-# TODO: Fix this function to include the commit message:
 def commit_msg_serialize(dictn):
     """Serialize a commit message as a key-value list message with support for
     multiline values.
