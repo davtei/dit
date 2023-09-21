@@ -18,11 +18,6 @@ show_ref_arg = subparsers.add_parser(
     "command.")
 
 
-# TODO: dit show-ref implementation is not complete:
-
-# TODO: fix display of output in dit show-ref:
-#     dit show-ref displays the sha and the ref
-
 def show_ref(repo, refs, with_hash=True, prefix=""):
     """List references in a local repository."""
     # iterating through the references:
