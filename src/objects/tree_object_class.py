@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """A module that defines the git tree object class."""
 
+from src.dit_commands.tree_parsing import tree_parse, tree_serialize
 from src.objects.gitobject_class import GitObject
-from src.dit_commands.tree_parsing import tree_serialize, tree_parse
 
 
 class TreeObject(GitObject):
@@ -21,6 +21,9 @@ class TreeObject(GitObject):
     def __init__(self, repo, data=None):
         """Initialize a git tree object with the provided repo and
         data (optional).
+        Args:
+            repo (str): The path to the git repository.
+            data (str): The serialized git tree object.
         """
         GitObject.__init__(self, repo, data)
 

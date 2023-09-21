@@ -8,11 +8,17 @@ class GitObject:
     A git object is a file that is stored in the .git/objects directory.
     It is a compressed file that contains the data of the object.
     The data is serialized and deserialized by the git object class.
+    Attributes:
+        repo: The path to the git repository.
     """
     repo = None
 
     def __init__(self, repo, data=None):
-        """Initialize a git object."""
+        """Initialize a git object.
+        Args:
+            repo (str): The path to the git repository.
+            data (str): The serialized git object.
+        """
         self.repo = repo
 
         if data is not None:
@@ -24,11 +30,17 @@ class GitObject:
 
     # Convert the git object to a string representation
     def serialize(self):
-        """Serialize the git object."""
+        """Serialize the git object.
+        Returns:
+            str: The serialized git object.
+        """
         raise NotImplementedError()
 
     # Convert the string representation of a git object to a git object,
     #  an instance of the GitObject class
     def deserialize(self, data):
-        """Deserialize the git object."""
+        """Deserialize the git object.
+        Args:
+            data (str): The serialized git object.
+        """
         raise NotImplementedError()
