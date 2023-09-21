@@ -32,33 +32,58 @@ def read_object(repo, sha):
 
     # making sure the object exists
     #  (a ValueError is raised to indicate mismatch):
-    if not os.path.exists(path):
-        raise ValueError(f"{sha} not found")
+    try:
+        assert os.path.exists(path)
+    except AssertionError as err:
+        raise ValueError(f"{sha} not found") from err
+
+    # if not os.path.exists(path):
+    #     raise ValueError(f"{sha} not found")
 
     # reading the object's content as a zlib compressed binary string:
     with open(path, "rb") as f:
-        raw_data = zlib.decompress(f.read())
-        # extracting the format of the object from the binary string:
-        extract1 = raw_data.index(b"\x00", 1)
-        object_format = raw_data[:extract1].decode()
-        # extracting the size of the object from the binary string:
-        extract2 = raw_data.index(b"\x00", extract1 + 1)
-        object_size = int(raw_data[extract1+1:extract2].decode("ascii"))
-        # checking that the size of the object is correct:
-        if object_size != len(raw_data[extract2+1:]):
-            raise ValueError(
-                f"expected {object_size} bytes, got {len(raw_data[extract2+1:])}")
+        decompressor = zlib.decompressobj()
+        object_format = None
+        object_size = None
+        raw_data_chunks = []
+        object_data = b""
 
-        # Depending on the format of the object, the appropriate class is
-        # selected to create an instance of the corresponding Git object
-        # as BlobObject, CommitObject, TagObject or TreeObject:
-        if object_format == "blob":
-            return BlobObject(repo, raw_data[extract2+1:])
-        elif object_format == "commit":
-            return CommitObject(repo, raw_data[extract2+1:])
-        # elif object_format == "tag":
-        #     return TagObject(repo, raw_data[extract2+1:])
-        elif object_format == "tree":
-            return TreeObject(repo, raw_data[extract2+1:])
-        else:
+        while True:
+            # reading the object's content in chunks:
+            chunk = f.read(1024)
+            if not chunk:
+                break
+            raw_data_chunks.append(decompressor.decompress(chunk))
+
+            if object_format is None or object_size is None:
+                raw_data = b"".join(raw_data_chunks)
+
+                if object_format is None:
+                    # null_index = raw_data.find(b"\x00", 1)
+                    null_index = raw_data.find(b" ")
+                    # object_format = raw_data[:null_index].decode()
+                    object_format = raw_data[:null_index]
+
+                # if object_size is None:
+                #     null_index = raw_data.find(b"\x00", null_index + 1)
+                #     object_size = raw_data[null_index+1:null_index+21]
+                #     expected_size = int(object_size.decode("ascii"))
+                #     if expected_size != len(raw_data):
+                #         raise ValueError(f"expected {expected_size} bytes, got {len(raw_data)}")
+
+            if len(raw_data_chunks) > 1:
+                object_data += chunk
+
+        object_classes = {
+            b"blob": BlobObject,
+            b"commit": CommitObject,
+            b"tree": TreeObject
+        }
+        object_class = object_classes.get(object_format)
+        if object_class is None:
             raise ValueError(f"Unknown object type {object_format}")
+
+        if object_data:
+            object_data += decompressor.flush()
+
+        return object_class(repo, object_data)
