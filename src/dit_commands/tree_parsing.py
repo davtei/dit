@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""A module that defines the tree parsing functions."""
 
 from src.objects.tree_leaf_class import GitTreeLeaf
 
