@@ -69,7 +69,8 @@ def read_object(repo, sha):
                 #     object_size = raw_data[null_index+1:null_index+21]
                 #     expected_size = int(object_size.decode("ascii"))
                 #     if expected_size != len(raw_data):
-                #         raise ValueError(f"expected {expected_size} bytes, got {len(raw_data)}")
+                #         raise ValueError(f"expected {expected_size} bytes, "
+                #                          f"got {len(raw_data)}")
 
             if len(raw_data_chunks) > 1:
                 object_data += chunk
