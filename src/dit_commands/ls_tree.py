@@ -33,7 +33,6 @@ def dit_ls_tree(args):
         dit ls-tree (-h | --help)"""
     repo = find_repo_root()
 
-# TODO: Error handling if the tree is not found or is not a tree:
     tree = read_object(repo, args.tree)
     # error handling if the tree is not found or is not a tree:
     try:
