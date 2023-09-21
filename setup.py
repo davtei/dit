@@ -34,7 +34,7 @@ setup(
     url=url,
     license=license,
     # Automatically discover and include all packages
-    packages=find_packages(exclude="tests/"),
+    packages=find_packages(exclude="tests*"),
     install_requires=install_requires,
     entry_points={
         "console_scripts": [
