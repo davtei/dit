@@ -60,5 +60,5 @@ def ls_tree(repo, tree, recursive=False, path=""):
             if leaf.mode.startswith(b"10") and recursive:
                 subtree = read_object(repo, leaf.sha)
                 if subtree.object_format == "tree":
-                    # stack.append((subtree, path + leaf.path + "/"))
+                    # if the leaf is a tree, add it to the stack
                     stack.append((repo, subtree, path + leaf.path + "/"))
