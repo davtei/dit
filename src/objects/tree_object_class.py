@@ -25,7 +25,8 @@ class TreeObject(GitObject):
             repo (str): The path to the git repository.
             data (str): The serialized git tree object.
         """
-        GitObject.__init__(self, repo, data)
+        # GitObject.__init__(self, repo, data)
+        super().__init__(repo, data)
 
     # Convert the tree object to a string representation
     def serialize(self):
