@@ -1,0 +1,7 @@
+setuptools==68.2.2
+wheel==0.34.2
+
+# ```
+# requirements can be installed with:
+# pip install -r requirements.txt
+# ```
