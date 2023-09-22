@@ -16,7 +16,7 @@ license = "MIT"
 install_requires = [
     # List your project's dependencies here
     "setuptools==68.2.2",
-    "wheel==0.34.2"
+    # "wheel==0.34.2"
 ]
 
 # Read the README file for the long description
