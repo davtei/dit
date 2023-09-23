@@ -100,4 +100,4 @@ Related projects that also provided a source of inspiration include:
 * [wyag](https://wyag.thb.lt)
 
 ## Licensing
-MIT License
+This project is licensed under the MIT License
