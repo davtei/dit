@@ -14,6 +14,14 @@ from src.dit_commands.show_ref import dit_show_ref
 from src.dit_commands.update_ref import dit_update_ref
 from src.parsers import parser
 
+DITS = {
+    "hash-object": dit_hash_object,
+    "init": dit_init,
+    "ls-tree": dit_ls_tree,
+    "show-ref": dit_show_ref,
+    "update-ref": dit_update_ref
+}
+
 
 def main(arg=None):
     """Main function."""
@@ -22,28 +30,11 @@ def main(arg=None):
     else:
         args = arg
 
-
     # Call the function that matches the command name
     command = args.dit_command
 
-    # if command == "cat-file":
-    #     dit_cat_file(args)
-    # if command == "checkout":
-    #     dit_checkout(args)
-    if command == "hash-object":
-        dit_hash_object(args)
-    elif command == "init":
-        dit_init(args)
-    elif command == "ls-tree":
-        dit_ls_tree(args)
-    elif command == "show-ref":
-        dit_show_ref(args)
-    # elif command == "symbolic-ref":
-    #     dit_symbolic_ref(args)
-    # elif command == "tag":
-    #     dit_tag(args)
-    elif command == "update-ref":
-        dit_update_ref(args)
+    if command in DITS:
+        DITS[command](args)
     else:
         print(f"#{command} is not a dit command. See dit --help.")
 
