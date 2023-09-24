@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """The main module for dit."""
 
-import src
 from src import mainlib
 
 mainlib.main()
